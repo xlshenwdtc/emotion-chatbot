@@ -24,9 +24,7 @@ jobs:
         node-version: 18
 
     - name: Replace API Key
-      run: |
-        sed -i "s/{{DEEPSEEK_API_KEY}}/${{ secrets.DEEPSEEK_API_KEY }}/g" index.html
-
+      run: sed -i "s/__DEEPSEEK_API_KEY__/${{ secrets.DEEPSEEK_API_KEY }}/g" index.html
     - name: Build
       run: |
         mkdir -p ./dist
