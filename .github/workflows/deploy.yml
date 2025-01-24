@@ -31,7 +31,6 @@ jobs:
       run: |
         mkdir -p ./dist
         cp index.html ./dist/
-        cp -r assets/ ./dist/  # 如果有其他资源文件
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
