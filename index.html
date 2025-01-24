@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情感支持助手</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --background: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--background);
+        }
+
+        #chat-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        #chat-window {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background: var(--secondary);
+            color: white;
+            margin-left: auto;
+        }
+
+        .bot-message {
+            background: #f1f3f4;
+            margin-right: auto;
+        }
+
+        #input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        #send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        #send-btn:hover {
+            background: var(--secondary);
+        }
+
+        .lang-switcher {
+            text-align: right;
+            margin-bottom: 15px;
+        }
+
+        .lang-btn {
+            background: none;
+            border: 1px solid #ddd;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .lang-btn.active {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .loader {
+            display: none;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--secondary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            #chat-window { height: 60vh; }
+            #send-btn { padding: 0 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="zh">中文</button>
+        <button class="lang-btn" data-lang="en">English</button>
+    </div>
+
+    <div id="chat-container">
+        <div id="chat-window">
+            <div class="message bot-message">
+                <span data-lang="zh">您好！我是情感支持助手，随时为您服务</span>
+                <span data-lang="en">Hello! I'm your emotional support assistant</span>
+            </div>
+        </div>
+
+        <div id="input-area">
+            <textarea id="user-input" 
+                     data-placeholder-zh="请输入消息..."
+                     data-placeholder-en="Type your message..."></textarea>
+            <button id="send-btn">
+                <span data-lang="zh">发送</span>
+                <span data-lang="en">Send</span>
+            </button>
+            <div class="loader"></div>
+        </div>
+    </div>
+
+    <script>
+        // 使用更安全的占位符格式
+const API_KEY = 'sk-2bbac541e22e4c8585fc5a620d47a8a6'; // 部署时自动替换
+const API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
+// 添加请求头验证
+async function sendMessage() {
+  console.log('当前API密钥:', API_KEY.slice(0, 6) + '...'); // 调试输出
+  
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${API_KEY}`
+  });
+  
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+    // ...后续处理
+  } catch (error) {
+    console.error('完整错误详情:', error);
+  }
+}
+
+        // 状态管理
+        let currentLang = navigator.language.startsWith('zh') ? 'zh' : 'en';
+        let chatLog = JSON.parse(localStorage.getItem('chatLog')) || [];
+
+        // 初始化界面
+        function updateUI() {
+            // 更新文本显示
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                el.style.display = el.dataset.lang === currentLang ? 'inline' : 'none';
+            });
+
+            // 更新输入框提示
+            const placeholder = currentLang === 'zh' ?
+                document.getElementById('user-input').getAttribute('data-placeholder-zh') :
+                document.getElementById('user-input').getAttribute('data-placeholder-en');
+            document.getElementById('user-input').placeholder = placeholder;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === currentLang);
+            });
+        }
+
+        // 添加消息
+        function addMessage(content, isUser) {
+            const chatWindow = document.getElementById('chat-window');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">${content}</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            chatWindow.appendChild(messageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // 处理API请求
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // 显示用户消息
+            addMessage(message, true);
+            input.value = '';
+
+            // 显示加载状态
+            const loader = document.querySelector('.loader');
+            const sendBtn = document.getElementById('send-btn');
+            loader.style.display = 'inline-block';
+            sendBtn.disabled = true;
+
+            try {
+                // 检测输入语言
+                const isChinese = /[\u4e00-\u9fa5]/.test(message);
+                const systemPrompt = isChinese ?
+                    "你是一个情感支持助手，用温暖亲切的中文回答用户问题" :
+                    "You are an emotional support assistant, respond in warm and friendly English";
+
+                // 调用API
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: message }
+                        ],
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                
+                const data = await response.json();
+                const reply = data.choices[0].message.content;
+
+                // 保存记录
+                chatLog.push({
+                    timestamp: new Date().toISOString(),
+                    user: message,
+                    bot: reply,
+                    lang: currentLang
+                });
+                localStorage.setItem('chatLog', JSON.stringify(chatLog));
+
+                // 显示回复
+                addMessage(reply, false);
+            } catch (error) {
+                const errorMsg = currentLang === 'zh' ?
+                    "请求失败，请稍后重试" : "Request failed, please try later";
+                addMessage(errorMsg, false);
+                console.error('API Error:', error);
+            } finally {
+                loader.style.display = 'none';
+                sendBtn.disabled = false;
+            }
+        }
+
+        // 事件监听
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentLang = btn.dataset.lang;
+                updateUI();
+            });
+        });
+
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+        document.getElementById('user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 初始化
+        updateUI();
+    </script>
+</body>
+</html>
