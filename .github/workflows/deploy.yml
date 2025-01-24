@@ -29,8 +29,8 @@ jobs:
       run: |
         sed -i "s/__DEEPSEEK_API_KEY__/${{ secrets.DEEPSEEK_API_KEY }}/g" index.html
         echo "替换后的密钥片段:"
-        grep -oP 'const API_KEY = "\Kdsk-[a-zA-Z0-9]{6}' index.html || echo "替换失败!"
-
+        grep "const API_KEY = '" index.html
+        
     - name: Build
       run: |
         mkdir -p ./dist
