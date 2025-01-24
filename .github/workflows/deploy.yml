@@ -1,4 +1,4 @@
-name: Deploy Chatbot
+name: Secure Deploy
 
 on:
   push:
@@ -7,22 +7,37 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v4
-+     with:
-+       fetch-depth: 0  # 获取完整历史记录
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
 
     - name: Replace API Key
       run: |
         sed -i "s/{{DEEPSEEK_API_KEY}}/${{ secrets.DEEPSEEK_API_KEY }}/g" index.html
 
-    - name: Deploy to GitHub Pages
+    - name: Build
+      run: |
+        mkdir -p ./dist
+        cp index.html ./dist/
+        cp -r assets/ ./dist/  # 如果有其他资源文件
+
+    - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: .
-+       force_orphan: true  # 强制清空历史
-+       keep_files: false   # 不保留旧文件
-+       enable_jekyll: false # 禁用Jekyll处理
-+       cname: yourdomain.com # 如果有自定义域名
+        publish_dir: ./dist
+        keep_files: false
+        force_orphan: true
+        enable_jekyll: false
